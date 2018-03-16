@@ -155,7 +155,7 @@ unsigned MultijetBinnedSum::GetDim() const
 }
 
 
-TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances)
+TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances, HistReturnType histReturnType)
   const
 {
     // An auxiliary structure to aggregate information about a single bin. Consists of the lower
@@ -176,10 +176,28 @@ TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances
     for (auto const &triggerBin: triggerBins)
     {
         auto const &simBalProfile = triggerBin.simBalProfile;
-        
-        for (unsigned i = 0; i < triggerBin.recompBal.size(); ++i)
+
+	std::unique_ptr<TH1> balRebinned(triggerBin.balProfile->Rebin(
+	  triggerBin.simBalProfile->GetNbinsX(), "",
+	  triggerBin.simBalProfile->GetXaxis()->GetXbins()->GetArray()));
+
+        for (unsigned i = 0; i < triggerBin.recompBal.size(); ++i){
+	  switch(histReturnType){
+	  case HistReturnType::bal: 
             bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
-              triggerBin.recompBal[i], std::sqrt(triggerBin.totalUnc2[i])));
+					      balRebinned->GetBinContent(i+1), balRebinned->GetBinError(i+1)));
+	    break;
+	  case HistReturnType::recompBal: //triggerBin.recompBal is a plain vector, thus the offset of 1 w.r.t. bin contents
+            bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
+					      triggerBin.recompBal[i], std::sqrt(triggerBin.totalUnc2[i])));
+	    break;
+	  case HistReturnType::simBal:
+            bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
+					      simBalProfile->GetBinContent(i+1), simBalProfile->GetBinError(i+1)));
+	    break;
+	  }
+
+	}
         
         
         double const lastEdge = simBalProfile->GetBinLowEdge(simBalProfile->GetNbinsX() + 1);

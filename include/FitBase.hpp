@@ -126,6 +126,16 @@ public:
     void AddMeasurement(MeasurementBase const *measurement);
     
     /**
+     * \brief Retrieve vector of measurements included in the CombLossFunction
+     */
+    std::vector<MeasurementBase const *> GetMeasurements(); 
+
+    /**
+     * \brief Retrieve pointer to jet corrector
+     */
+    JetCorrBase* GetCorrector();
+  
+    /**
      * \brief Returns the number of parameters to be fitted
      * 
      * Computed as the number of parameters of the jet correction plus the number of nuisances to

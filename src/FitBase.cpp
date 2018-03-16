@@ -88,6 +88,15 @@ void CombLossFunction::AddMeasurement(MeasurementBase const *measurement)
     measurements.emplace_back(measurement);
 }
 
+std::vector<MeasurementBase const *> CombLossFunction::GetMeasurements()
+{
+  return measurements;
+}
+
+JetCorrBase* CombLossFunction::GetCorrector()
+{
+  return corrector.get();
+}
 
 unsigned CombLossFunction::GetNDF() const
 {

@@ -12,6 +12,8 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 find_package(ROOT REQUIRED COMPONENTS Minuit2)
 include_directories(${ROOT_INCLUDE_DIRS})
 
+message(${ROOT_INCLUDE_DIRS})
+
 find_package(Boost 1.34.0 REQUIRED COMPONENTS program_options)
 include_directories(${Boost_INCLUDE_DIR})
 
