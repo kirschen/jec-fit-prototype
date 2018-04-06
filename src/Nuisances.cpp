@@ -3,23 +3,26 @@
 
 Nuisances::Nuisances():
   photonScale(0.),
-  MJB_JER(1.),
-  MJB_JEC(1.),
-  MJB_FSR(1.),
-  MJB_PU(1.),
-  MJB_JERFunc ("MJB_JERFunc","0.01",10,7000),
-  MJB_JECFunc ("MJB_JECFunc","0.01",10,7000),
-  MJB_FSRFunc ("MJB_FSRFunc","0.01",10,7000),
-  MJB_PUFunc  ("MJB_PUFunc","0.01",10,7000),
-
-  MPF_JER(1.),
   MPF_JEC(1.),
-  MPF_FSR(1.),
+  MJB_JEC(1.),
+  MPF_JER(1.),
+  MJB_JER(1.),
   MPF_PU(1.),
-  MPF_JERFunc ("MPF_JERFunc","0.01*log(x)",10,7000),
-  MPF_JECFunc ("MPF_JECFunc","0.01",10,7000),
-  MPF_FSRFunc ("MPF_FSRFunc","0.01*log(x)*log(x)",10,7000),
-  MPF_PUFunc  ("MPF_PUFunc","0.01*log(x)*x",10,7000)
+  MJB_PU(1.),
+
+  MJB_FSR(1.),
+  MPF_FSR(1.),
+
+  // produced by jecsys/minitools/drawMJBunc.C
+  MPF_JECFunc ("MPF_JECFunc","0.01*(-0.685 + 0.4637*log(x/200.) +0.01313*log(x/200.)*log(x/200.))",10,7000),
+  MJB_JECFunc ("MJB_JECFunc","0.01*(-0.684 + 0.4656*log(x/200.) +0.01520*log(x/200.)*log(x/200.))",10,7000),
+  MPF_JERFunc ("MPF_JERFunc","0.01*(-0.466 + 0.4830*log(x/200.) -0.18435*log(x/200.)*log(x/200.))",10,7000),
+  MJB_JERFunc ("MJB_JERFunc","0.01*(-0.478 + 0.4874*log(x/200.) -0.18320*log(x/200.)*log(x/200.))",10,7000),
+  MPF_PUFunc ("MPF_PUFunc","0.01*(-0.065 + 0.0632*log(x/200.) -0.02821*log(x/200.)*log(x/200.))",10,7000),
+  MJB_PUFunc ("MJB_PUFunc","0.01*(-0.086 + 0.1109*log(x/200.) -0.04350*log(x/200.)*log(x/200.))",10,7000),
+
+  MPF_FSRFunc ("MPF_FSRFunc","0.01*(0.014 + 1.190*pow(x/200.,-2.8625))",10,7000),
+  MJB_FSRFunc ("MJB_FSRFunc","0.01*(0.028 + 2.380*pow(x/200.,-2.8625))",10,7000)
   
 {
   MJB_Nuisances.push_back(&MJB_JER);
