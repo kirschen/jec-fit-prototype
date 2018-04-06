@@ -11,6 +11,7 @@
 #include <cstring>
 #include <limits>
 #include <sstream>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 
@@ -257,7 +258,39 @@ double MultijetBinnedSum::Eval(JetCorrBase const &corrector, Nuisances const &nu
         {
             double const meanBal = triggerBin.recompBal[binIndex - 1];
             double const simMeanBal = triggerBin.simBalProfile->GetBinContent(binIndex);
-            chi2 += std::pow(meanBal - simMeanBal, 2) / triggerBin.totalUnc2[binIndex - 1];
+            double ptLead = triggerBin.simBalProfile->GetBinCenter(binIndex);
+            double shifts=0;
+            if(std::isnan(meanBal) || std::isnan(simMeanBal)){
+              std::cout << "\n \033[1;31m ERROR: \033[0m\n NaN in binIndex" << binIndex << " in triggerBin " << iTriggerBin<< std::endl;
+              std::cout << "will skip this bin and try to continue" << std::endl;
+              continue;
+            }
+
+//            for(unsigned MJBn_i = 0;  MJBn_i<nuisances.MJB_NuisanceCollection.size(); ++MJBn_i){
+//              std::cout << "*(std::get<double*>(nuisances.MJB_NuisanceCollection.at(MJBn_i))))" << *(std::get<double*>(nuisances.MJB_NuisanceCollection.at(MJBn_i))) << std::endl;
+//              std::cout << "(std::get<TF1*>(nuisances.MJB_NuisanceCollection.at(MJBn_i)))->Eval(ptLead)" << (std::get<TF1*>(nuisances.MJB_NuisanceCollection.at(MJBn_i)))->Eval(ptLead) << std::endl;
+//            }
+            if (method == Method::PtBal){
+              for(unsigned MJBn_i = 0;  MJBn_i<nuisances.MJB_NuisanceCollection.size(); ++MJBn_i){
+                shifts+= * (std::get<double*>(nuisances.MJB_NuisanceCollection.at(MJBn_i))) * (std::get<TF1*>(nuisances.MJB_NuisanceCollection.at(MJBn_i)))->Eval(ptLead);
+              }
+//              for(unsigned MJBn_i = 0;  MJBn_i<nuisances.MJB_Nuisances.size(); ++MJBn_i){
+//                shifts+= *nuisances.MJB_Nuisances.at(MJBn_i) * nuisances.MJB_Parametrisation.at(MJBn_i)->Eval(ptLead);
+//              }
+            }
+            else if (method == Method::MPF){
+              for(unsigned MPFn_i = 0;  MPFn_i<nuisances.MPF_NuisanceCollection.size(); ++MPFn_i){
+                shifts+= * (std::get<double*>(nuisances.MPF_NuisanceCollection.at(MPFn_i))) * (std::get<TF1*>(nuisances.MPF_NuisanceCollection.at(MPFn_i)))->Eval(ptLead);
+              }
+//              for(unsigned MPFn_i = 0;  MPFn_i<nuisances.MPF_Nuisances.size(); ++MPFn_i){
+//                shifts+= *nuisances.MPF_Nuisances.at(MPFn_i) * nuisances.MPF_Parametrisation.at(MPFn_i)->Eval(ptLead);
+//              }
+            }
+            //          std::cout << "ptLead " << ptLead << " meanBal " << meanBal << " shifts " << shifts  << " simMeanBal " << simMeanBal  << " totalunc2 " << triggerBin.totalUnc2[binIndex - 1] << " chi2 " << chi2 <<  std::endl;
+            
+            chi2 += std::pow(meanBal +shifts - simMeanBal, 2) / triggerBin.totalUnc2[binIndex - 1];
+
+            
         }
     }
     
@@ -478,7 +511,7 @@ void MultijetBinnedSum::UpdateBalance(JetCorrBase const &corrector, Nuisances co
                 meanBal = ComputePtBal(triggerBin, binRange[0], binRange[1], ptJetStart, corrector);
             else
                 meanBal = ComputeMPF(triggerBin, binRange[0], binRange[1], ptJetStart, corrector);
-            
+            if(std::isnan(meanBal))std::cout << "NaN in binIndex" << binIndex << std::endl;
             triggerBin.recompBal[binIndex - 1] = meanBal;
         }
     }
