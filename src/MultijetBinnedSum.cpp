@@ -191,14 +191,27 @@ TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances
 	  triggerBin.simBalProfile->GetXaxis()->GetXbins()->GetArray()));
 
         for (unsigned i = 0; i < triggerBin.recompBal.size(); ++i){
+	  double ptLead = triggerBin.simBalProfile->GetBinCenter(i+1);
+	  double shifts=0;
 	  switch(histReturnType){
 	  case HistReturnType::bal: 
             bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
 					      balRebinned->GetBinContent(i+1), balRebinned->GetBinError(i+1)));
 	    break;
 	  case HistReturnType::recompBal: //triggerBin.recompBal is a plain vector, thus the offset of 1 w.r.t. bin contents
+            if (method == Method::PtBal){
+              for(unsigned MJBn_i = 0;  MJBn_i<nuisances.MJB_NuisanceCollection.size(); ++MJBn_i){
+                shifts+= * (std::get<double*>(nuisances.MJB_NuisanceCollection.at(MJBn_i))) * (std::get<TF1*>(nuisances.MJB_NuisanceCollection.at(MJBn_i)))->Eval(ptLead);
+              }
+            }
+            else if (method == Method::MPF){
+              for(unsigned MPFn_i = 0;  MPFn_i<nuisances.MPF_NuisanceCollection.size(); ++MPFn_i){
+                shifts+= * (std::get<double*>(nuisances.MPF_NuisanceCollection.at(MPFn_i))) * (std::get<TF1*>(nuisances.MPF_NuisanceCollection.at(MPFn_i)))->Eval(ptLead);
+              }
+            }
+	    
             bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
-					      triggerBin.recompBal[i], std::sqrt(triggerBin.totalUnc2[i])));
+					      triggerBin.recompBal[i]+shifts, std::sqrt(triggerBin.totalUnc2[i])));
 	    break;
 	  case HistReturnType::simBal:
             bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
@@ -266,25 +279,15 @@ double MultijetBinnedSum::Eval(JetCorrBase const &corrector, Nuisances const &nu
               continue;
             }
 
-//            for(unsigned MJBn_i = 0;  MJBn_i<nuisances.MJB_NuisanceCollection.size(); ++MJBn_i){
-//              std::cout << "*(std::get<double*>(nuisances.MJB_NuisanceCollection.at(MJBn_i))))" << *(std::get<double*>(nuisances.MJB_NuisanceCollection.at(MJBn_i))) << std::endl;
-//              std::cout << "(std::get<TF1*>(nuisances.MJB_NuisanceCollection.at(MJBn_i)))->Eval(ptLead)" << (std::get<TF1*>(nuisances.MJB_NuisanceCollection.at(MJBn_i)))->Eval(ptLead) << std::endl;
-//            }
             if (method == Method::PtBal){
               for(unsigned MJBn_i = 0;  MJBn_i<nuisances.MJB_NuisanceCollection.size(); ++MJBn_i){
                 shifts+= * (std::get<double*>(nuisances.MJB_NuisanceCollection.at(MJBn_i))) * (std::get<TF1*>(nuisances.MJB_NuisanceCollection.at(MJBn_i)))->Eval(ptLead);
               }
-//              for(unsigned MJBn_i = 0;  MJBn_i<nuisances.MJB_Nuisances.size(); ++MJBn_i){
-//                shifts+= *nuisances.MJB_Nuisances.at(MJBn_i) * nuisances.MJB_Parametrisation.at(MJBn_i)->Eval(ptLead);
-//              }
             }
             else if (method == Method::MPF){
               for(unsigned MPFn_i = 0;  MPFn_i<nuisances.MPF_NuisanceCollection.size(); ++MPFn_i){
                 shifts+= * (std::get<double*>(nuisances.MPF_NuisanceCollection.at(MPFn_i))) * (std::get<TF1*>(nuisances.MPF_NuisanceCollection.at(MPFn_i)))->Eval(ptLead);
               }
-//              for(unsigned MPFn_i = 0;  MPFn_i<nuisances.MPF_Nuisances.size(); ++MPFn_i){
-//                shifts+= *nuisances.MPF_Nuisances.at(MPFn_i) * nuisances.MPF_Parametrisation.at(MPFn_i)->Eval(ptLead);
-//              }
             }
             //          std::cout << "ptLead " << ptLead << " meanBal " << meanBal << " shifts " << shifts  << " simMeanBal " << simMeanBal  << " totalunc2 " << triggerBin.totalUnc2[binIndex - 1] << " chi2 " << chi2 <<  std::endl;
             

@@ -3,15 +3,15 @@
 
 Nuisances::Nuisances():
   photonScale(0.),
-  MPF_JEC(1.),
-  MJB_JEC(1.),
-  MPF_JER(1.),
-  MJB_JER(1.),
-  MPF_PU(1.),
-  MJB_PU(1.),
+  MPF_JEC(0.),
+  MJB_JEC(0.),
+  MPF_JER(0.),
+  MJB_JER(0.),
+  MPF_PU(0.),
+  MJB_PU(0.),
   
-  MPF_FSR(1.),
-  MJB_FSR(1.),
+  MPF_FSR(0.),
+  MJB_FSR(0.),
   
   // produced by jecsys/minitools/drawMJBunc.C
   MPF_JECFunc ("MPF_JECFunc","0.01*(-0.685 + 0.4637*log(x/200.) +0.01313*log(x/200.)*log(x/200.))",10,7000),
