@@ -3,15 +3,15 @@
 
 Nuisances::Nuisances():
   photonScale(0.),
-  MPF_JEC(1.),
-  MJB_JEC(1.),
-  MPF_JER(1.),
-  MJB_JER(1.),
-  MPF_PU(1.),
-  MJB_PU(1.),
+  MPF_JEC(0.),
+  MJB_JEC(0.),
+  MPF_JER(0.),
+  MJB_JER(0.),
+  MPF_PU(0.),
+  MJB_PU(0.),
 
-  MPF_FSR(1.),
-  MJB_FSR(1.),
+  MPF_FSR(0.),
+  MJB_FSR(0.),
 
   // produced by jecsys/minitools/drawMJBunc.C
   MPF_JECFunc ("MPF_JECFunc","0.01*(-0.685 + 0.4637*log(x/200.) +0.01313*log(x/200.)*log(x/200.))",10,7000),
@@ -25,26 +25,10 @@ Nuisances::Nuisances():
   MJB_FSRFunc ("MJB_FSRFunc","0.01*(0.028 + 2.380*pow(x/200.,-2.8625))",10,7000)
   
 {
-  //MJB_Nuisances.push_back(&MJB_JER);
-  //MJB_Nuisances.push_back(&MJB_JEC);
-  //MJB_Nuisances.push_back(&MJB_FSR);
-  //MJB_Nuisances.push_back(&MJB_PU);
-  //MJB_Parametrisation.push_back(&MJB_JERFunc);
-  //MJB_Parametrisation.push_back(&MJB_JECFunc);
-  //MJB_Parametrisation.push_back(&MJB_FSRFunc);
-  //MJB_Parametrisation.push_back(&MJB_PUFunc);
   MJB_NuisanceCollection.push_back(std::make_tuple("MJB_JER",&MJB_JER,&MJB_JERFunc));
   MJB_NuisanceCollection.push_back(std::make_tuple("MJB_JEC",&MJB_JEC,&MJB_JECFunc));
   MJB_NuisanceCollection.push_back(std::make_tuple("MJB_FSR",&MJB_FSR,&MJB_FSRFunc));
   MJB_NuisanceCollection.push_back(std::make_tuple("MJB_PU",&MJB_PU,&MJB_PUFunc));
-  //MPF_Nuisances.push_back(&MPF_JER);
-  //MPF_Nuisances.push_back(&MPF_JEC);
-  //MPF_Nuisances.push_back(&MPF_FSR);
-  //MPF_Nuisances.push_back(&MPF_PU);
-  //MPF_Parametrisation.push_back(&MPF_JERFunc);
-  //MPF_Parametrisation.push_back(&MPF_JECFunc);
-  //MPF_Parametrisation.push_back(&MPF_FSRFunc);
-  //MPF_Parametrisation.push_back(&MPF_PUFunc);
   MPF_NuisanceCollection.push_back(std::make_tuple("MPF_JER",&MPF_JER,&MPF_JERFunc));
   MPF_NuisanceCollection.push_back(std::make_tuple("MPF_JEC",&MPF_JEC,&MPF_JECFunc));
   MPF_NuisanceCollection.push_back(std::make_tuple("MPF_FSR",&MPF_FSR,&MPF_FSRFunc));
