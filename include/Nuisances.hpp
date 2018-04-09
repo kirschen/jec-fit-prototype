@@ -42,6 +42,7 @@ struct Nuisances
 
   double MPF_FSR;
   double MJB_FSR;
+
   TF1 MPF_JECFunc;
   TF1 MJB_JECFunc;
   TF1 MPF_JERFunc;
