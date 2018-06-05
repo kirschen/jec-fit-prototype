@@ -11,6 +11,7 @@
 #include <cstring>
 #include <limits>
 #include <sstream>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 
@@ -211,8 +212,8 @@ TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances
 	  triggerBin.simBalProfile->GetXaxis()->GetXbins()->GetArray()));
 
         for (unsigned i = 0; i < triggerBin.recompBal.size(); ++i){
-	  double ptLead = triggerBin.simBalProfile->GetBinCenter(i+1);
-	  double shifts=0;
+	  //	  double ptLead = triggerBin.simBalProfile->GetBinCenter(i+1);
+	  //	  double shifts=0;
 	  switch(histReturnType){
 	  case HistReturnType::bal: 
             bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
