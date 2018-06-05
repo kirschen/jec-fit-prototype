@@ -49,7 +49,8 @@ public:
     {
         bal,
 	recompBal,
-        simBal
+        simBal,
+	simBalShifted
     };
   
 private:

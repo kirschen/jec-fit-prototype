@@ -219,33 +219,24 @@ TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances
 					      balRebinned->GetBinContent(i+1), balRebinned->GetBinError(i+1)));
 	    break;
 	  case HistReturnType::recompBal: //triggerBin.recompBal is a plain vector, thus the offset of 1 w.r.t. bin contents
-            // Apply systematic variations to the mean balance in simulation.  Each variation is
-            //scaled according to the value of the corresponding nuisance parameter.
-            for (auto const &syst: triggerBin.systVars)
-                simMeanBal *= 1. + syst.second.Eval(binIndex - 1, nuisances[syst.first]);
-
-
-
-
-
-            if (method == Method::PtBal){
-              for(unsigned MJBn_i = 0;  MJBn_i<nuisances.MJB_NuisanceCollection.size(); ++MJBn_i){
-                shifts+= * (std::get<double*>(nuisances.MJB_NuisanceCollection.at(MJBn_i))) * (std::get<TF1*>(nuisances.MJB_NuisanceCollection.at(MJBn_i)))->Eval(ptLead);
-              }
-            }
-            else if (method == Method::MPF){
-              for(unsigned MPFn_i = 0;  MPFn_i<nuisances.MPF_NuisanceCollection.size(); ++MPFn_i){
-                shifts+= * (std::get<double*>(nuisances.MPF_NuisanceCollection.at(MPFn_i))) * (std::get<TF1*>(nuisances.MPF_NuisanceCollection.at(MPFn_i)))->Eval(ptLead);
-              }
-            }
-	    
             bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
-					      triggerBin.recompBal[i]+shifts, std::sqrt(triggerBin.totalUnc2[i])));
+					      triggerBin.recompBal[i], std::sqrt(triggerBin.totalUnc2[i])));
 	    break;
 	  case HistReturnType::simBal:
             bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
 					      simBalProfile->GetBinContent(i+1), simBalProfile->GetBinError(i+1)));
 	    break;
+
+	  case HistReturnType::simBalShifted:
+            double simMeanBal = triggerBin.simBalProfile->GetBinContent(i+1);
+            // Apply systematic variations to the mean balance in simulation.  Each variation is
+            //scaled according to the value of the corresponding nuisance parameter.
+            for (auto const &syst: triggerBin.systVars)
+                simMeanBal *= 1. + syst.second.Eval(i, nuisances[syst.first]);
+            bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
+					      simMeanBal, simBalProfile->GetBinError(i+1)));
+	    break;
+	    
 	  }
 
 	}
