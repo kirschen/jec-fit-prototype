@@ -97,6 +97,15 @@ void CombLossFunction::AddMeasurement(MeasurementBase const *measurement)
         nuisances.Register(nuisance);
 }
 
+std::vector<MeasurementBase const *> CombLossFunction::GetMeasurements()
+{
+  return measurements;
+}
+
+JetCorrBase* CombLossFunction::GetCorrector()
+{
+  return corrector.get();
+}
 
 unsigned CombLossFunction::GetNDF() const
 {

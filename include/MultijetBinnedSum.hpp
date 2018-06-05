@@ -43,7 +43,15 @@ public:
         PtBal,
         MPF
     };
-    
+
+    /// Supported ReturnTypes for retrieving histograms over full range
+    enum class HistReturnType
+    {
+        bal,
+	recompBal,
+        simBal
+    };
+  
 private:
     /// Auxiliary structure to aggregate data related to a single trigger bin
     struct TriggerBin
@@ -124,7 +132,7 @@ public:
      * 
      * The binning is as used for simulation.
      */
-    TH1D GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances) const;
+    TH1D GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances, HistReturnType histReturnType) const;
     
     /**
      * \brief Evaluates the deviation with the given jet corrector and set of nuisances
