@@ -11,6 +11,7 @@
 #include <cstring>
 #include <limits>
 #include <sstream>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 
@@ -181,7 +182,7 @@ std::set<std::string> MultijetBinnedSum::GetNuisances() const
 }
 
 
-TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances)
+TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances, HistReturnType histReturnType)
   const
 {
     // An auxiliary structure to aggregate information about a single bin. Consists of the lower
@@ -205,10 +206,41 @@ TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances
         auto const &triggerBin = triggerBins[iTriggerBin];
         
         auto const &simBalProfile = triggerBin.simBalProfile;
-        
-        for (unsigned i = 0; i < triggerBin.recompBal.size(); ++i)
+
+	std::unique_ptr<TH1> balRebinned(triggerBin.balProfile->Rebin(
+	  triggerBin.simBalProfile->GetNbinsX(), "",
+	  triggerBin.simBalProfile->GetXaxis()->GetXbins()->GetArray()));
+
+        for (unsigned i = 0; i < triggerBin.recompBal.size(); ++i){
+	  //	  double ptLead = triggerBin.simBalProfile->GetBinCenter(i+1);
+	  //	  double shifts=0;
+	  switch(histReturnType){
+	  case HistReturnType::bal: 
             bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
-              triggerBin.recompBal[i], std::sqrt(triggerBin.totalUnc2[i])));
+					      balRebinned->GetBinContent(i+1), balRebinned->GetBinError(i+1)));
+	    break;
+	  case HistReturnType::recompBal: //triggerBin.recompBal is a plain vector, thus the offset of 1 w.r.t. bin contents
+            bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
+					      triggerBin.recompBal[i], std::sqrt(triggerBin.totalUnc2[i])));
+	    break;
+	  case HistReturnType::simBal:
+            bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
+					      simBalProfile->GetBinContent(i+1), simBalProfile->GetBinError(i+1)));
+	    break;
+
+	  case HistReturnType::simBalShifted:
+            double simMeanBal = triggerBin.simBalProfile->GetBinContent(i+1);
+            // Apply systematic variations to the mean balance in simulation.  Each variation is
+            //scaled according to the value of the corresponding nuisance parameter.
+            for (auto const &syst: triggerBin.systVars)
+                simMeanBal *= 1. + syst.second.Eval(i, nuisances[syst.first]);
+            bins.emplace_back(std::make_tuple(simBalProfile->GetBinLowEdge(i + 1),
+					      simMeanBal, simBalProfile->GetBinError(i+1)));
+	    break;
+	    
+	  }
+
+	}
         
         
         double const lastEdge = simBalProfile->GetBinLowEdge(simBalProfile->GetNbinsX() + 1);
@@ -500,7 +532,7 @@ void MultijetBinnedSum::UpdateBalance(JetCorrBase const &corrector, Nuisances co
                 meanBal = ComputePtBal(triggerBin, binRange[0], binRange[1], ptJetStart, corrector);
             else
                 meanBal = ComputeMPF(triggerBin, binRange[0], binRange[1], ptJetStart, corrector);
-            
+            if(std::isnan(meanBal))std::cout << "NaN in binIndex" << binIndex << std::endl;
             triggerBin.recompBal[binIndex - 1] = meanBal;
         }
     }

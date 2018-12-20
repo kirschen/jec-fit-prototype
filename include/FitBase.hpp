@@ -157,6 +157,16 @@ public:
     void AddMeasurement(MeasurementBase const *measurement);
     
     /**
+     * \brief Retrieve vector of measurements included in the CombLossFunction
+     */
+    std::vector<MeasurementBase const *> GetMeasurements(); 
+
+    /**
+     * \brief Retrieve pointer to jet corrector
+     */
+    JetCorrBase* GetCorrector();
+
+    /**
      * \brief Returns the number of degrees of freedom
      * 
      * The number of degrees of freedom is computed as the sum of dimensionality of all included
