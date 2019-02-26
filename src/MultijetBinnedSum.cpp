@@ -17,7 +17,7 @@
 
 
 MultijetBinnedSum::MultijetBinnedSum(std::string const &fileName,
-  MultijetBinnedSum::Method method_):
+  MultijetBinnedSum::Method method_, NuisanceDefinitions &nuisanceDefs):
     method(method_)
 {
     std::string methodLabel;
@@ -108,7 +108,7 @@ MultijetBinnedSum::MultijetBinnedSum(std::string const &fileName,
             {
                 bin.systVars[systName] = HistMorph(*histUp,
                   *dynamic_cast<TH1 *>(directory->Get((histPrefix + "Down").c_str())));
-                systNames.insert(systName);
+                nuisanceDefs.Register(systName);
             }
         }
         
@@ -175,15 +175,7 @@ unsigned MultijetBinnedSum::GetDim() const
     return dimensionality;
 }
 
-
-std::set<std::string> MultijetBinnedSum::GetNuisances() const
-{
-    return systNames;
-}
-
-
-TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances, HistReturnType histReturnType)
-  const
+TH1D MultijetBinnedSum::GetRecompBalance(JetCorrBase const &corrector, Nuisances const &nuisances, HistReturnType histReturnType) const
 {
     // An auxiliary structure to aggregate information about a single bin. Consists of the lower
     //bin edge, bin content, and its uncertainty.
@@ -537,3 +529,4 @@ void MultijetBinnedSum::UpdateBalance(JetCorrBase const &corrector, Nuisances co
         }
     }
 }
+

@@ -2,12 +2,19 @@
 
 #include <FitBase.hpp>
 
+#include <Morphing.hpp>
+#include <Nuisances.hpp>
+
+#include <TGraphErrors.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TProfile.h>
 #include <TSpline.h>
 
+#include <array>
+#include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 #include <utility>
@@ -20,7 +27,7 @@
  * 
  * The divergence between data and simulation is computed as the chi^2 difference between mean
  * values of a balance observable, in bins of pt of the leading jet. The computation follows the
- * approach outlined in [1]. The mean balance in data in a given bin in pt of the leading jet,
+ * approach described in [1]. The mean balance in data in a given bin in pt of the leading jet,
  * which is referred to as a chi^2 bin, is computed using the binned-sum method. Due to the effect
  * of jet corrections, the position of the chi^2 bin along the axis of the pt of the leading jet
  * changes. The mean balance in simulation is approximated with a continuous function of pt of the
@@ -31,8 +38,16 @@
  * histograms are filled separately for different triggers, which are mapped to non-overlapping
  * ranges in pt of the leading jet. Corresponding groups of chi^2 bins are referred to as trigger
  * bins.
+ *
+ * All systematic variations found in the input file are applied (separately for data and
+ * simulation). However, user can disable selected ones by providing their names to the constructor.
+ *
+ * The class can also construct histograms with mean values of the chosen balance observables for
+ * the given jet correction and set of nuisance parameters. This is done with methods
+ * RecomputeBalanceData and RecomputeBalanceSim. The residual deviations can be computed using
+ * method ComputeResiduals. Using this is the preferred way to visualize the performance of the fit.
  * 
- * [1] https://indico.cern.ch/event/767001/contributions/3184996/attachments/1738592/2812806/2018.10.22_JERC_Fluctuations_v1.pdf#page=9
+ * [1] https://indico.cern.ch/event/780845/#16-multijet-analysis-with-craw
  */
 class MultijetCrawlingBins: public MeasurementBase
 {
@@ -43,6 +58,8 @@ public:
         PtBal,
         MPF
     };
+
+    using Spline = TSpline3;
     
 private:
     /**
@@ -141,6 +158,9 @@ private:
      * and simulation in the current chi^2 bin, as well as the corresponding chi^2 value. The
      * algorithm is described in the documentation for class MultijetCrawlingBins. Values of jet
      * corrections are accessed exclusively through a JetCache object.
+     *
+     * Systematic variations in the mean value of the balance observable in data and simulation are
+     * supported. They need to be registered with methods AddDataSyst and AddSimSyst.
      */
     class Chi2Bin
     {
@@ -161,33 +181,72 @@ private:
          */
         Chi2Bin(Method method, unsigned firstBin, unsigned lastBin,
           std::shared_ptr<TH1> ptLeadHist, std::shared_ptr<TProfile> mpfProfile,
-          std::shared_ptr<TH2> sumProj, std::shared_ptr<TSpline3> simBalSpline, double unc2);
+          std::shared_ptr<TH2> sumProj, std::shared_ptr<Spline> simBalSpline, double unc2);
         
     public:
+        /**
+         * Add systematic variation in data
+         *
+         * \param nuisanceIndex  Index of nuisance parameter that controls this variation.
+         * \param up  Reference up relative deviation.
+         * \param down  Reference down relative deviation.
+         *
+         * The variation is applied to the mean value of the balance observable in data, and it is
+         * evaluated for the chi^2 bin as a whole.
+         */
+        void AddDataSyst(unsigned nuisanceIndex, double up, double down);
+
+        /**
+         * Add systematic variation in simulation
+         *
+         * \param nuisanceIndex  Index of nuisance parameter that controls this variation.
+         * \param up  Spline that defines the reference up relative deviation for the mean value of
+         *     the balance observable in simulation. Parameterized as a function of the logarithm of
+         *     pt of the leading jet.
+         * \param down  Spline that defines the reference down variation, similarly to parameter up.
+         */
+        void AddSimSyst(unsigned nuisanceIndex, std::shared_ptr<Spline> up,
+          std::shared_ptr<Spline> down);
+
         /// Computes value of chi^2 in this bin
-        double Chi2() const;
+        double Chi2(Nuisances const &nuisances) const;
         
         /// Computes mean value of the balance observable in data in this chi^2 bin
-        double MeanBalance() const;
+        double MeanBalance(Nuisances const &nuisances) const;
+
+        /**
+         * Computes mean value of pt of the leading jet in this chi^2 bin
+         *
+         * The cached jet correction is applied.
+         */
+        double MeanPt() const;
         
-        /// Computes mean value of the balance observable in simulation in this chi^2 bin
-        double MeanSimBalance() const;
+        /**
+         * Computes mean value of the balance observable in simulation in this chi^2 bin
+         *
+         * The computation takes into account the shift in the position of this chi^2 bin along pt,
+         * which caused by the cached jet correction.
+         */
+        double MeanSimBalance(Nuisances const &nuisances) const;
         
         /// Returns the range in pt of the leading jet for this chi^2 bin
         std::pair<double, double> PtRange() const;
         
         /// Computes mean value of the balance observable in simulation at given pt
-        double SimBalance(double const ptLead) const;
+        double SimBalance(double const ptLead, Nuisances const &nuisances) const;
         
         /// Updates JetCache object used in the computations
         void SetJetCache(JetCache const *jetCache);
+
+        /// Returns statistical uncertainty in data
+        double Uncertainty() const;
     
     private:
         /// Implements computation of mean value of the MPF observable in data
-        double MeanMPF() const;
+        double MeanMPF(Nuisances const &nuisances) const;
         
         /// Implements computation of mean value of the pt balance observable in data
-        double MeanPtBal() const;
+        double MeanPtBal(Nuisances const &nuisances) const;
         
     private:
         /**
@@ -221,23 +280,62 @@ private:
          * 
          * Parameterized as a function of the natural logarithm of pt.
          */
-        std::shared_ptr<TSpline3> simBalSpline;
+        std::shared_ptr<Spline> simBalSpline;
         
         /// Squared uncertainty to be used for chi^2
         double unc2;
         
         /// Pointer to method to compute mean balance in data using the chosen observable
-        double (Chi2Bin::*meanBalanceCalc)() const;
+        double (Chi2Bin::*meanBalanceCalc)(Nuisances const &) const;
         
         /// Non-owning pointer to a JetCache object
         JetCache const *jetCache;
+
+        /**
+         * Registered systematic variations in data
+         *
+         * The key of the map is the index of the nuisance parameter that corresponds to the
+         * variation. The value is a PointMorph object that defines the relative deviation in the
+         * full chi^2 bin.
+         */
+        std::map<unsigned, PointMorph> dataVariations;
+
+        /**
+         * Registered systematic variations in simulation
+         *
+         * The key of the map is the index of the nuisance parameter that corresponds to the
+         * variation. The value is a pair of splines that give up and down relative deviations in
+         * the mean value of the balance observable. As with simBalSpline, these splines are
+         * parameterized with the natural logarithm of pt.
+         */
+        std::map<unsigned, std::array<std::shared_ptr<Spline>, 2>> simVariations;
     };
     
 public:
-    /// Constructor from path to ROOT file with inputs and computation method
-    MultijetCrawlingBins(std::string const &fileName, Method method);
+    /**
+     * Constructor
+     *
+     * \param fileName  Path to ROOT file with inputs.
+     * \param method  Computation method.
+     * \param nuisanceDefs  Object that will collect requested nuisance parameters.
+     * \param systToExclude  Labels of systematic uncertainties that should not be included.
+     */
+    MultijetCrawlingBins(std::string const &fileName, Method method,
+      NuisanceDefinitions &nuisanceDefs, std::set<std::string> systToExclude = {});
     
 public:
+    /**
+     * Computes data-to-simulation residuals for given jet correction and nuisances
+     *
+     * The residuals are evaluated, in a given chi^2 bin, as the ratio between mean values of the
+     * balance observable in data and in simulation, minus 1. The point corresponding to each chi^2
+     * bin is assigned as the x coordinate the mean value of pt of the leading jet, which is
+     * computed taking the jet correction into account. All chi^2 bins are included in the returned
+     * graph, regardless of their mask statuses. The uncertainty for each point is set according to
+     * the input uncertainties of the mean values of the balance observable in data.
+     */
+    TGraphErrors ComputeResiduals(JetCorrBase const &corrector, Nuisances const &nuisances) const;
+
     /**
      * Returns number of chi^2 bins
      * 
@@ -251,6 +349,28 @@ public:
      * Implemented from MeasurementBase.
      */
     virtual double Eval(JetCorrBase const &corrector, Nuisances const &nuisances) const override;
+
+    /**
+     * Recompute mean balance observable in data for given jet correction and nuisances
+     *
+     * Return a TH1D histogram that represents mean values of the balance observable as a function
+     * of pt of the leading jet. The binning is as for the chi^2 bins, but the given jet correction
+     * is applied to it so that the migration in pt of the leading jet is taken into account. All
+     * chi^2 bins are included, regardless of their mask statuses. The uncertainty in each bin is
+     * set to the statistical uncertainty of the input mean values; as a result, it is not affected
+     * by the given jet correction. The histogram is not associated with any ROOT directory.
+     */
+    TH1D RecomputeBalanceData(JetCorrBase const &corrector, Nuisances const &nuisances) const;
+    
+    /**
+     * Recompute mean balance observable in simulation for given jet correction and nuisances
+     *
+     * Return a TH1D histogram that represents mean values of the balance observable as a function
+     * of pt of the leading jet. The same binning as for chi^2 bins is used. All chi^2 bins are
+     * included, regardless of their mask statuses. The uncertainties are set to zero. The histogram
+     * is not associated with any ROOT directory.
+     */
+    TH1D RecomputeBalanceSim(JetCorrBase const &corrector, Nuisances const &nuisances) const;
     
     /**
      * Restricts computation to given range in pt of the leading jet
